@@ -1,7 +1,7 @@
 from google import genai
 
 
-def setup_gemini(api_key: str, model_name: str = "gemini-2.0-flash-lite") -> genai.Client:
+def setup_gemini(api_key: str, model_name: str = "gemini-flash-latest") -> genai.Client:
     # model_name is kept for backward compatibility with existing callers.
     _ = model_name
     return genai.Client(api_key=api_key)
@@ -11,7 +11,7 @@ def answer_question(
     model: genai.Client,
     question: str,
     context_chunks: list[str],
-    model_name: str = "gemini-2.0-flash-lite",
+    model_name: str = "gemini-flash-latest",
 ) -> str:
     context = "\n\n---\n\n".join(context_chunks)
 
