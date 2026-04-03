@@ -21,6 +21,8 @@ def init_session_state() -> None:
         st.session_state.vector_store = None
     if "chunks" not in st.session_state:
         st.session_state.chunks = []
+    if "chunk_counts" not in st.session_state:
+        st.session_state.chunk_counts = {}
     if "index_signature" not in st.session_state:
         st.session_state.index_signature = None
     if "chat_history" not in st.session_state:
@@ -92,29 +94,45 @@ def read_uploaded_document(uploaded_file) -> str:
             temp_path.unlink()
 
 
-def compute_signature(source_text: str, chunk_size: int, chunk_overlap: int) -> str:
+def compute_signature(documents: list[tuple[str, str]], chunk_size: int, chunk_overlap: int) -> str:
     # Signatur entscheidet, ob ein Re-Indexing noetig ist.
-    payload = f"{chunk_size}|{chunk_overlap}|{source_text}".encode("utf-8")
+    parts = [f"{name}:{text}" for name, text in documents]
+    payload = f"{chunk_size}|{chunk_overlap}|{'||'.join(parts)}".encode("utf-8")
     return hashlib.sha256(payload).hexdigest()
 
 
-def build_or_reuse_index(source_text: str, chunk_size: int, chunk_overlap: int) -> bool:
-    signature = compute_signature(source_text, chunk_size, chunk_overlap)
+def build_or_reuse_index(documents: list[tuple[str, str]], chunk_size: int, chunk_overlap: int) -> bool:
+    signature = compute_signature(documents, chunk_size, chunk_overlap)
 
     if st.session_state.index_signature == signature and st.session_state.vector_store is not None:
         return False
 
-    with st.spinner("Lade und indexiere Dokument..."):
+    progress_placeholder = st.empty()
+    chunks_pro_pdf: list[list[tuple[str, str]]] = []
+    chunk_counts: dict[str, int] = {}
+
+    for filename, source_text in documents:
+        progress_placeholder.info(f"📄 Verarbeite {filename}...")
         chunks = split_text_into_chunks(
             source_text,
             chunk_size=chunk_size,
             chunk_overlap=chunk_overlap,
         )
-        store = VectorStore()
-        store.build_index(chunks)
+        chunks_mit_quelle = [(chunk, filename) for chunk in chunks]
+        chunks_pro_pdf.append(chunks_mit_quelle)
+        chunk_counts[filename] = len(chunks_mit_quelle)
+
+    store = VectorStore()
+    store.build_index(chunks_pro_pdf)
+
+    total_chunks = sum(chunk_counts.values())
+    progress_placeholder.success(
+        f"✅ {len(documents)} Dokumente indexiert: {total_chunks} Chunks gesamt"
+    )
 
     st.session_state.vector_store = store
-    st.session_state.chunks = chunks
+    st.session_state.chunks = store.chunks
+    st.session_state.chunk_counts = chunk_counts
     st.session_state.index_signature = signature
     return True
 
@@ -131,7 +149,7 @@ with st.sidebar:
 tab_upload, tab_text = st.tabs(["Datei-Upload", "Direkter Text"])
 
 with tab_upload:
-    uploaded_file = st.file_uploader("Dokument hochladen (.txt, .pdf)", type=["txt", "pdf"])
+    uploaded_files = st.file_uploader("PDFs hochladen", type="pdf", accept_multiple_files=True)
 
 with tab_text:
     direct_text = st.text_area("Oder Text direkt einfuegen", height=220)
@@ -146,24 +164,31 @@ if ask_clicked:
         if not question.strip():
             raise ValueError("Bitte gib eine Frage ein.")
 
-        source_text = ""
-        if uploaded_file is not None:
-            source_text = read_uploaded_document(uploaded_file)
-        elif direct_text.strip():
-            source_text = direct_text
+        documents: list[tuple[str, str]] = []
 
-        if not source_text.strip():
-            raise ValueError("Bitte lade eine Datei hoch oder gib direkten Text ein.")
+        if uploaded_files:
+            for uploaded_file in uploaded_files:
+                source_text = read_uploaded_document(uploaded_file)
+                if source_text.strip():
+                    documents.append((uploaded_file.name, source_text))
 
-        index_rebuilt = build_or_reuse_index(source_text, chunk_size, chunk_overlap)
+        if direct_text.strip():
+            documents.append(("Direkter Text", direct_text))
+
+        if not documents:
+            raise ValueError("Bitte lade mindestens eine PDF hoch oder gib direkten Text ein.")
+
+        index_rebuilt = build_or_reuse_index(documents, chunk_size, chunk_overlap)
         if index_rebuilt:
-            st.info(f"📊 Dokument indexiert: {len(st.session_state.chunks)} Chunks erstellt")
+            for filename, count in st.session_state.chunk_counts.items():
+                st.write(f"✅ {filename} ({count} Chunks)")
 
         with st.spinner("Suche relevante Abschnitte..."):
             retrieved_chunks = st.session_state.vector_store.search(question, top_k=top_k)
 
         st.subheader("Gefundene Abschnitte")
-        for i, (chunk, score) in enumerate(retrieved_chunks, start=1):
+        for i, (chunk_tuple, score) in enumerate(retrieved_chunks, start=1):
+            chunk, filename = chunk_tuple
             if score >= 80:
                 score_color = "#2d9e5e"
                 score_suffix = ""
@@ -178,6 +203,7 @@ if ask_clicked:
                 st.markdown(
                     (
                         f"📄 Abschnitt {i} · {len(chunk)} Zeichen · "
+                        f"📁 {filename} · "
                         f"<span style='color: {score_color}; font-weight: 700;'>"
                         f"🎯 {score}% Relevanz{score_suffix}</span>"
                     ),
@@ -195,7 +221,7 @@ if ask_clicked:
                 qa_engine = QAEngine(api_key=st.session_state.gemini_api_key)
                 response = qa_engine.answer_question(
                     question=question,
-                    context_chunks=[chunk for chunk, _ in retrieved_chunks],
+                    context_chunks=[chunk for (chunk, _), _ in retrieved_chunks],
                 )
 
             st.divider()
