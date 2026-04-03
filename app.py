@@ -5,16 +5,11 @@ import tempfile
 from pathlib import Path
 
 import streamlit as st
-from dotenv import load_dotenv
 
 from document_loader import load_pdf, load_text
-from qa_engine import answer_question, setup_gemini
+from qa_engine import QAEngine
 from text_chunker import split_text_into_chunks
 from vector_store import VectorStore
-
-
-# Laedt Variablen aus der .env, damit GEMINI_API_KEY verfuegbar ist.
-load_dotenv()
 
 st.set_page_config(page_title="Document RAG", page_icon="📄", layout="wide")
 st.title("📄 Document RAG")
@@ -30,6 +25,26 @@ def init_session_state() -> None:
         st.session_state.index_signature = None
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
+    if "gemini_api_key" not in st.session_state:
+        st.session_state.gemini_api_key = ""
+
+
+def require_api_key() -> bool:
+    if st.session_state.gemini_api_key:
+        return True
+
+    st.subheader("Gemini API-Key")
+    key_input = st.text_input("API-Key", type="password")
+    st.caption("Deinen kostenlosen Key bekommst du auf aistudio.google.com")
+
+    if st.button("Key speichern", type="primary"):
+        if not key_input.strip():
+            st.error("Bitte gib einen gültigen API-Key ein.")
+        else:
+            st.session_state.gemini_api_key = key_input.strip()
+            st.rerun()
+
+    return False
 
 
 def add_chat_history_entry(question: str, answer: str) -> None:
@@ -114,6 +129,9 @@ def build_or_reuse_index(source_text: str, chunk_size: int, chunk_overlap: int) 
 
 init_session_state()
 
+if not require_api_key():
+    st.stop()
+
 with st.sidebar:
     st.header("Einstellungen")
     chunk_size = st.slider("Chunk Size", min_value=200, max_value=1500, value=500, step=50)
@@ -167,7 +185,7 @@ if ask_clicked:
                 score_color = "#dc2626"
                 score_suffix = " (möglicherweise nicht relevant)"
 
-            with st.expander(f"📄 Abschnitt {i}  ·  {len(chunk)} Zeichen", expanded=False):
+            with st.expander(f"Details zu Abschnitt {i}", expanded=False):
                 st.markdown(
                     (
                         f"📄 Abschnitt {i} · {len(chunk)} Zeichen · "
@@ -185,21 +203,12 @@ if ask_clicked:
             answer = "Retrieval abgeschlossen."
             st.success(answer)
         else:
-            try:
-                api_key = st.secrets.get("GEMINI_API_KEY")
-            except Exception:
-                api_key = None
-            if not api_key:
-                import os
-
-                api_key = os.getenv("GEMINI_API_KEY")
-
-            if not api_key:
-                raise ValueError("GEMINI_API_KEY nicht gefunden. Bitte in .env setzen.")
-
             with st.spinner("Gemini denkt nach..."):
-                client = setup_gemini(api_key)
-                response = answer_question(client, question, [chunk for chunk, _ in retrieved_chunks])
+                qa_engine = QAEngine(api_key=st.session_state.gemini_api_key)
+                response = qa_engine.answer_question(
+                    question=question,
+                    context_chunks=[chunk for chunk, _ in retrieved_chunks],
+                )
 
             st.divider()
             st.subheader("💬 Antwort")

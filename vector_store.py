@@ -13,6 +13,10 @@ class VectorStore:
         if not chunks:
             raise ValueError("Es wurden keine Chunks zum Indexieren übergeben.")
 
+        chunks = [c for c in chunks if len(c.strip()) >= 50]
+        if not chunks:
+            raise ValueError("Nach dem Filtern sind keine Chunks mit mindestens 50 Zeichen übrig.")
+
         self.chunks = chunks
 
         embeddings = self.model.encode(chunks)
@@ -40,7 +44,7 @@ class VectorStore:
         results: list[tuple[str, int]] = []
         for distance, idx in zip(distances[0], indices[0]):
             if 0 <= idx < len(self.chunks):
-                score = round(max(0, 100 - (float(distance) * 25)))
+                score = round(max(0, 100 - (float(distance) * 15)))
                 results.append((self.chunks[idx], score))
 
         return results
