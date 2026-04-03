@@ -53,11 +53,11 @@ def compute_signature(source_text: str, chunk_size: int, chunk_overlap: int) -> 
     return hashlib.sha256(payload).hexdigest()
 
 
-def build_or_reuse_index(source_text: str, chunk_size: int, chunk_overlap: int) -> None:
+def build_or_reuse_index(source_text: str, chunk_size: int, chunk_overlap: int) -> bool:
     signature = compute_signature(source_text, chunk_size, chunk_overlap)
 
     if st.session_state.index_signature == signature and st.session_state.vector_store is not None:
-        return
+        return False
 
     with st.spinner("Lade und indexiere Dokument..."):
         chunks = split_text_into_chunks(
@@ -71,6 +71,7 @@ def build_or_reuse_index(source_text: str, chunk_size: int, chunk_overlap: int) 
     st.session_state.vector_store = store
     st.session_state.chunks = chunks
     st.session_state.index_signature = signature
+    return True
 
 
 init_session_state()
@@ -107,14 +108,16 @@ if ask_clicked:
         if not source_text.strip():
             raise ValueError("Bitte lade eine Datei hoch oder gib direkten Text ein.")
 
-        build_or_reuse_index(source_text, chunk_size, chunk_overlap)
+        index_rebuilt = build_or_reuse_index(source_text, chunk_size, chunk_overlap)
+        if index_rebuilt:
+            st.info(f"📊 Dokument indexiert: {len(st.session_state.chunks)} Chunks erstellt")
 
         with st.spinner("Suche relevante Abschnitte..."):
             retrieved_chunks = st.session_state.vector_store.search(question, top_k=top_k)
 
         st.subheader("Gefundene Abschnitte")
         for i, chunk in enumerate(retrieved_chunks, start=1):
-            with st.expander(f"📄 Abschnitt {i}", expanded=False):
+            with st.expander(f"📄 Abschnitt {i}  ·  {len(chunk)} Zeichen", expanded=False):
                 with st.container(border=True):
                     # Codeblock in Markdown sorgt fuer eine gut lesbare, code-aehnliche Darstellung.
                     safe_chunk = chunk.replace("```", "'''")
@@ -140,8 +143,8 @@ if ask_clicked:
                 response = answer_question(client, question, retrieved_chunks)
 
             st.divider()
-            st.caption(f"Basierend auf {len(retrieved_chunks)} gefundenen Abschnitten")
-            st.success(response)
+            st.subheader("💬 Antwort")
+            st.markdown(response)
 
     except Exception as exc:
         st.error(f"Fehler: {exc}")
