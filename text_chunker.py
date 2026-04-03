@@ -22,7 +22,7 @@ def split_text_into_chunks(
         chunk_size=chunk_size,
         chunk_overlap=chunk_overlap,
         length_function=len,
-        separators=["\n\n", "\n", " ", ""],
+        separators=["\n\n## ", "\n\n", "\n", ". ", " ", ""],
     )
 
     return splitter.split_text(text)

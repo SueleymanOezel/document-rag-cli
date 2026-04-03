@@ -1,5 +1,31 @@
+import time
+
 from google import genai
-from google.api_core.exceptions import NotFound, ResourceExhausted
+
+
+def _get_status_code(exc: Exception) -> int | None:
+    status_code = getattr(exc, "code", None)
+    if callable(status_code):
+        try:
+            status_code = status_code()
+        except Exception:
+            status_code = None
+
+    if status_code is not None:
+        try:
+            return int(status_code)
+        except (TypeError, ValueError):
+            return None
+
+    response = getattr(exc, "response", None)
+    response_status = getattr(response, "status_code", None)
+    if response_status is not None:
+        try:
+            return int(response_status)
+        except (TypeError, ValueError):
+            return None
+
+    return None
 
 
 def setup_gemini(api_key: str, model_name: str = "gemini-flash-latest") -> genai.Client:
@@ -32,17 +58,20 @@ FRAGE:
 ANTWORT:
 """.strip()
 
-    try:
-        response = model.models.generate_content(
-            model=model_name,
-            contents=prompt,
-        )
-    except ResourceExhausted:
-        # Reicht 429-Quota-Fehler explizit an den CLI-Layer weiter.
-        raise
-    except NotFound:
-        # Reicht 404-Modellfehler explizit an den CLI-Layer weiter.
-        raise
+    for attempt in range(3):
+        try:
+            response = model.models.generate_content(
+                model=model_name,
+                contents=prompt,
+            )
+            break
+        except Exception as exc:
+            if _get_status_code(exc) == 503:
+                if attempt < 2:
+                    time.sleep(2)
+                    continue
+                return "⚠️ Die KI ist gerade überlastet. Bitte versuche es in 30 Sekunden erneut."
+            raise
 
     if not getattr(response, "text", None):
         raise ValueError("Gemini hat keine Antwort zurückgegeben.")

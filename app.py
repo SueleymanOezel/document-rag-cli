@@ -1,4 +1,6 @@
 import hashlib
+import html
+from datetime import datetime
 import tempfile
 from pathlib import Path
 
@@ -26,6 +28,42 @@ def init_session_state() -> None:
         st.session_state.chunks = []
     if "index_signature" not in st.session_state:
         st.session_state.index_signature = None
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = []
+
+
+def add_chat_history_entry(question: str, answer: str) -> None:
+    entry = {
+        "question": question,
+        "answer": answer,
+        "timestamp": datetime.now().strftime("%H:%M"),
+    }
+    st.session_state.chat_history.append(entry)
+    st.session_state.chat_history = st.session_state.chat_history[-10:]
+
+
+def render_chat_history() -> None:
+    if not st.session_state.chat_history:
+        return
+
+    st.subheader("Chatverlauf")
+    for index, entry in enumerate(st.session_state.chat_history):
+        question = html.escape(entry["question"])
+        answer = html.escape(entry["answer"]).replace("\n", "<br>")
+
+        left, right = st.columns([0.88, 0.12])
+        left.markdown(f"**{question}**")
+        right.markdown(
+            f"<div style='text-align: right; color: #666;'>{entry['timestamp']}</div>",
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            f"<div style='margin-left: 1.25rem;'>{answer}</div>",
+            unsafe_allow_html=True,
+        )
+
+        if index < len(st.session_state.chat_history) - 1:
+            st.divider()
 
 
 def read_uploaded_document(uploaded_file) -> str:
@@ -91,6 +129,8 @@ with tab_upload:
 with tab_text:
     direct_text = st.text_area("Oder Text direkt einfuegen", height=220)
 
+history_container = st.container()
+
 question = st.text_input("Deine Frage")
 ask_clicked = st.button("Fragen", type="primary")
 
@@ -124,7 +164,8 @@ if ask_clicked:
                     st.markdown(f"```text\n{safe_chunk}\n```")
 
         if mode == "Nur Retrieval":
-            st.success("Retrieval abgeschlossen.")
+            answer = "Retrieval abgeschlossen."
+            st.success(answer)
         else:
             try:
                 api_key = st.secrets.get("GEMINI_API_KEY")
@@ -145,6 +186,12 @@ if ask_clicked:
             st.divider()
             st.subheader("💬 Antwort")
             st.markdown(response)
+            answer = response
+
+        add_chat_history_entry(question=question, answer=answer)
 
     except Exception as exc:
         st.error(f"Fehler: {exc}")
+
+with history_container:
+    render_chat_history()

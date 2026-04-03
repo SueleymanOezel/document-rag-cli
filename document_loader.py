@@ -33,7 +33,7 @@ def load_pdf(file_path: str) -> str:
 
 def _clean_pdf_text(text: str) -> str:
     # 1) Erzeugt vor erkannten Ueberschriften eine Absatzgrenze, damit Struktur erhalten bleibt.
-    text = re.sub(r"\n([A-ZÄÖÜ][a-zäöüA-ZÄÖÜ\s\-()]+)\n([A-ZÄÖÜ])", r"\n\n\1\n\2", text)
+    text = re.sub(r"\n([A-ZÄÖÜ][a-zäöüA-ZÄÖÜ\s\-()]{3,40})\n", r"\n\n## \1\n", text)
 
     # 2) Ersetzt einzelne Zeilenumbrueche durch Leerzeichen, laesst aber Absatzgrenzen (\n\n) unberuehrt.
     text = re.sub(r"(?<!\n)\n(?!\n)", " ", text)
