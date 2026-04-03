@@ -29,22 +29,14 @@ def init_session_state() -> None:
         st.session_state.gemini_api_key = ""
 
 
-def require_api_key() -> bool:
-    if st.session_state.gemini_api_key:
-        return True
-
+def render_api_key_input() -> None:
     st.subheader("Gemini API-Key")
-    key_input = st.text_input("API-Key", type="password")
+    st.text_input("API-Key (optional)", type="password", key="gemini_api_key")
     st.caption("Deinen kostenlosen Key bekommst du auf aistudio.google.com")
-
-    if st.button("Key speichern", type="primary"):
-        if not key_input.strip():
-            st.error("Bitte gib einen gültigen API-Key ein.")
-        else:
-            st.session_state.gemini_api_key = key_input.strip()
-            st.rerun()
-
-    return False
+    st.info(
+        "ℹ️ Ohne API-Key werden nur die relevanten Textabschnitte angezeigt "
+        "(Retrieval-Modus). Mit Key erhältst du eine KI-Zusammenfassung."
+    )
 
 
 def add_chat_history_entry(question: str, answer: str) -> None:
@@ -128,16 +120,13 @@ def build_or_reuse_index(source_text: str, chunk_size: int, chunk_overlap: int) 
 
 
 init_session_state()
-
-if not require_api_key():
-    st.stop()
+render_api_key_input()
 
 with st.sidebar:
     st.header("Einstellungen")
     chunk_size = st.slider("Chunk Size", min_value=200, max_value=1500, value=500, step=50)
     chunk_overlap = st.slider("Chunk Overlap", min_value=0, max_value=200, value=50, step=10)
     top_k = st.slider("Top-K", min_value=1, max_value=10, value=3, step=1)
-    mode = st.radio("Modus", options=["RAG (mit Gemini)", "Nur Retrieval"])
 
 tab_upload, tab_text = st.tabs(["Datei-Upload", "Direkter Text"])
 
@@ -199,10 +188,9 @@ if ask_clicked:
                     safe_chunk = chunk.replace("```", "'''")
                     st.markdown(f"```text\n{safe_chunk}\n```")
 
-        if mode == "Nur Retrieval":
-            answer = "Retrieval abgeschlossen."
-            st.success(answer)
-        else:
+        hat_key = bool(st.session_state.get("gemini_api_key", "").strip())
+
+        if hat_key:
             with st.spinner("Gemini denkt nach..."):
                 qa_engine = QAEngine(api_key=st.session_state.gemini_api_key)
                 response = qa_engine.answer_question(
@@ -214,6 +202,9 @@ if ask_clicked:
             st.subheader("💬 Antwort")
             st.markdown(response)
             answer = response
+        else:
+            st.info("💡 Füge einen Gemini API-Key hinzu um eine KI-Zusammenfassung zu erhalten.")
+            answer = "Retrieval-Modus: Relevante Abschnitte wurden angezeigt."
 
         add_chat_history_entry(question=question, answer=answer)
 
