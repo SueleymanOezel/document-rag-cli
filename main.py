@@ -26,6 +26,7 @@ import argparse
 from pathlib import Path
 
 from dotenv import load_dotenv
+from google.api_core.exceptions import NotFound, ResourceExhausted
 
 from document_loader import load_text_from_file
 from text_chunker import split_text_into_chunks
@@ -63,6 +64,9 @@ def get_input_text(args: argparse.Namespace) -> str:
     if args.text is not None:
         return args.text
     if args.file is not None:
+        file_path = Path(args.file)
+        if not file_path.is_file():
+            raise FileNotFoundError(f"Datei nicht gefunden: {file_path}")
         return load_text_from_file(args.file)
     raise ValueError("Es wurde weder --text noch --file übergeben.")
 
@@ -98,8 +102,10 @@ def main() -> None:
 
         api_key = os.getenv("GEMINI_API_KEY")
         if not api_key:
-            print("Fehler: GEMINI_API_KEY ist nicht gesetzt.")
-            raise SystemExit(1)
+            raise EnvironmentError(
+                "Fehler: GEMINI_API_KEY nicht gesetzt.\n"
+                "Lege eine .env-Datei an oder setze die Umgebungsvariable."
+            )
 
         model = setup_gemini(api_key=api_key)
         answer = answer_question(
@@ -109,15 +115,31 @@ def main() -> None:
         )
 
     except FileNotFoundError as exc:
+        # Spezifischer Dateifehler mit Pfad, damit sofort klar ist, welche Eingabedatei fehlt.
         print(f"Fehler: {exc}")
         raise SystemExit(1)
+    except ResourceExhausted:
+        # 429 von Gemini: Quota/Rate-Limit wurde erreicht und sollte als klare Aktion kommuniziert werden.
+        print("Fehler: Gemini API-Quota überschritten. Warte kurz und versuche es erneut.")
+        raise SystemExit(1)
+    except NotFound:
+        # 404 vom Modell-Endpunkt: meist ist der Modellname ungültig oder nicht verfügbar.
+        print("Fehler: Das Gemini-Modell wurde nicht gefunden.\nPrüfe den Modellnamen in qa_engine.py.")
+        raise SystemExit(1)
+    except EnvironmentError as exc:
+        # Konfigurationsfehler wie fehlender API-Key werden separat und benutzerfreundlich ausgegeben.
+        print(exc)
+        raise SystemExit(1)
     except ValueError as exc:
+        # Validierungsfehler aus Input-Parsing oder Antwortverarbeitung.
         print(f"Fehler: {exc}")
         raise SystemExit(1)
     except UnicodeDecodeError:
+        # Dateiinhalt ist kein UTF-8 und kann deshalb nicht verarbeitet werden.
         print("Fehler: Die Datei konnte nicht als UTF-8 gelesen werden.")
         raise SystemExit(1)
     except Exception as exc:
+        # Fallback für alle nicht explizit behandelten Fehler.
         print(f"Unerwarteter Fehler: {exc}")
         raise SystemExit(1)
 

@@ -1,4 +1,5 @@
 from google import genai
+from google.api_core.exceptions import NotFound, ResourceExhausted
 
 
 def setup_gemini(api_key: str, model_name: str = "gemini-flash-latest") -> genai.Client:
@@ -31,10 +32,17 @@ FRAGE:
 ANTWORT:
 """.strip()
 
-    response = model.models.generate_content(
-        model=model_name,
-        contents=prompt,
-    )
+    try:
+        response = model.models.generate_content(
+            model=model_name,
+            contents=prompt,
+        )
+    except ResourceExhausted:
+        # Reicht 429-Quota-Fehler explizit an den CLI-Layer weiter.
+        raise
+    except NotFound:
+        # Reicht 404-Modellfehler explizit an den CLI-Layer weiter.
+        raise
 
     if not getattr(response, "text", None):
         raise ValueError("Gemini hat keine Antwort zurückgegeben.")
