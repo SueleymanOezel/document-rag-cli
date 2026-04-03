@@ -26,6 +26,13 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--chunk-overlap", type=int, default=50, help="Überlappung zwischen zwei benachbarten Chunks in Zeichen.")
     parser.add_argument("--query", type=str, required=True, help="Frage an das Dokument.")
     parser.add_argument("--top-k", type=int, default=3, help="Anzahl der relevanten Chunks.")
+    parser.add_argument(
+        "--mode",
+        type=str,
+        choices=["retrieve", "rag"],
+        default="rag",
+        help="Ausführungsmodus: nur Retrieval oder vollständiges RAG.",
+    )
     return parser
 
 
@@ -44,11 +51,6 @@ def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
 
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        print("Fehler: GEMINI_API_KEY ist nicht gesetzt.")
-        raise SystemExit(1)
-
     try:
         text = get_input_text(args)
         chunks = split_text_into_chunks(
@@ -64,6 +66,17 @@ def main() -> None:
             query=args.query,
             top_k=args.top_k,
         )
+
+        if args.mode == "retrieve":
+            print(f"Gefundene Chunks (Top {args.top_k}):")
+            for idx, chunk in enumerate(relevant_chunks, start=1):
+                print(f"[{idx}] {chunk}")
+            return
+
+        api_key = os.getenv("GEMINI_API_KEY")
+        if not api_key:
+            print("Fehler: GEMINI_API_KEY ist nicht gesetzt.")
+            raise SystemExit(1)
 
         model = setup_gemini(api_key=api_key)
         answer = answer_question(
