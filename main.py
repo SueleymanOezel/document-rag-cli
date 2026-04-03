@@ -34,6 +34,16 @@ from vector_store import VectorStore
 from qa_engine import setup_gemini, answer_question
 
 
+def is_quota_error(exc: Exception) -> bool:
+    message = str(exc).lower()
+    return (
+        "resource_exhausted" in message
+        or "quota" in message
+        or ("429" in message and "gemini" in message)
+        or "you exceeded your current quota" in message
+    )
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="document-rag-cli",
@@ -142,6 +152,9 @@ def main() -> None:
         print("Fehler: Die Datei konnte nicht als UTF-8 gelesen werden.")
         raise SystemExit(1)
     except Exception as exc:
+        if is_quota_error(exc):
+            print("Fehler: Gemini API-Quota überschritten. Warte kurz und versuche es erneut.")
+            raise SystemExit(1)
         # Fallback für alle nicht explizit behandelten Fehler.
         print(f"Unerwarteter Fehler: {exc}")
         raise SystemExit(1)
