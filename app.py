@@ -156,8 +156,26 @@ if ask_clicked:
             retrieved_chunks = st.session_state.vector_store.search(question, top_k=top_k)
 
         st.subheader("Gefundene Abschnitte")
-        for i, chunk in enumerate(retrieved_chunks, start=1):
+        for i, (chunk, score) in enumerate(retrieved_chunks, start=1):
+            if score >= 80:
+                score_color = "#2d9e5e"
+                score_suffix = ""
+            elif score >= 50:
+                score_color = "#d97706"
+                score_suffix = ""
+            else:
+                score_color = "#dc2626"
+                score_suffix = " (möglicherweise nicht relevant)"
+
             with st.expander(f"📄 Abschnitt {i}  ·  {len(chunk)} Zeichen", expanded=False):
+                st.markdown(
+                    (
+                        f"📄 Abschnitt {i} · {len(chunk)} Zeichen · "
+                        f"<span style='color: {score_color}; font-weight: 700;'>"
+                        f"🎯 {score}% Relevanz{score_suffix}</span>"
+                    ),
+                    unsafe_allow_html=True,
+                )
                 with st.container(border=True):
                     # Codeblock in Markdown sorgt fuer eine gut lesbare, code-aehnliche Darstellung.
                     safe_chunk = chunk.replace("```", "'''")
@@ -181,7 +199,7 @@ if ask_clicked:
 
             with st.spinner("Gemini denkt nach..."):
                 client = setup_gemini(api_key)
-                response = answer_question(client, question, retrieved_chunks)
+                response = answer_question(client, question, [chunk for chunk, _ in retrieved_chunks])
 
             st.divider()
             st.subheader("💬 Antwort")

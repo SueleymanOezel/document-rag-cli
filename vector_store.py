@@ -22,7 +22,7 @@ class VectorStore:
         self.index = faiss.IndexFlatL2(dimension)
         self.index.add(embeddings)
 
-    def search(self, query: str, top_k: int = 3) -> list[str]:
+    def search(self, query: str, top_k: int = 3) -> list[tuple[str, int]]:
         if self.index is None:
             raise ValueError("Der FAISS-Index wurde noch nicht erstellt.")
 
@@ -37,9 +37,10 @@ class VectorStore:
 
         distances, indices = self.index.search(query_embedding, top_k)
 
-        results: list[str] = []
-        for idx in indices[0]:
+        results: list[tuple[str, int]] = []
+        for distance, idx in zip(distances[0], indices[0]):
             if 0 <= idx < len(self.chunks):
-                results.append(self.chunks[idx])
+                score = round(max(0, 100 - (float(distance) * 25)))
+                results.append((self.chunks[idx], score))
 
         return results
