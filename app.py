@@ -114,13 +114,19 @@ if ask_clicked:
 
         st.subheader("Gefundene Abschnitte")
         for i, chunk in enumerate(retrieved_chunks, start=1):
-            st.markdown(f"**{i}. Abschnitt**")
-            st.write(chunk)
+            with st.expander(f"📄 Abschnitt {i}", expanded=False):
+                with st.container(border=True):
+                    # Codeblock in Markdown sorgt fuer eine gut lesbare, code-aehnliche Darstellung.
+                    safe_chunk = chunk.replace("```", "'''")
+                    st.markdown(f"```text\n{safe_chunk}\n```")
 
         if mode == "Nur Retrieval":
             st.success("Retrieval abgeschlossen.")
         else:
-            api_key = st.secrets.get("GEMINI_API_KEY") if hasattr(st, "secrets") else None
+            try:
+                api_key = st.secrets.get("GEMINI_API_KEY")
+            except Exception:
+                api_key = None
             if not api_key:
                 import os
 
@@ -133,8 +139,9 @@ if ask_clicked:
                 client = setup_gemini(api_key)
                 response = answer_question(client, question, retrieved_chunks)
 
-            st.subheader("Antwort")
-            st.write(response)
+            st.divider()
+            st.caption(f"Basierend auf {len(retrieved_chunks)} gefundenen Abschnitten")
+            st.success(response)
 
     except Exception as exc:
         st.error(f"Fehler: {exc}")
