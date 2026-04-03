@@ -1,5 +1,11 @@
 # document-rag-cli
 
+![Python](https://img.shields.io/badge/Python-3.10%2B-blue)
+![Gemini](https://img.shields.io/badge/Gemini-2.0--flash--lite-4285F4)
+![License: MIT](https://img.shields.io/badge/License-MIT-green)
+
+> Frage deine Dokumente per CLI ab: schnell, lokal indexiert und optional mit Gemini-Antworten.
+
 ## 1. Kurzbeschreibung
 
 `document-rag-cli` ist ein schlankes Python-CLI-Tool fuer Retrieval-Augmented Generation (RAG) auf Basis von Texten oder Textdateien. Es zerlegt Inhalte in Chunks, erzeugt Embeddings, sucht relevante Textstellen mit FAISS und beantwortet darauf basierende Fragen mit Gemini. Alternativ kann das Tool auch nur Retrieval ausgeben, ohne LLM-Antwort zu erzeugen.
@@ -95,6 +101,8 @@ GEMINI_API_KEY=DEIN_GEMINI_API_KEY
 ```
 
 Hinweis: Die `.env` wird beim Start automatisch geladen.
+
+Sicherheitshinweis: Die `.env` darf niemals committed werden und muss in `.gitignore` stehen. In diesem Repo ist `.env` bereits in der `.gitignore` eingetragen.
 
 ## 5. Verwendung
 
