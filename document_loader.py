@@ -32,16 +32,16 @@ def load_pdf(file_path: str) -> str:
 
 
 def _clean_pdf_text(text: str) -> str:
-    # 1) Repariert Silbentrennungen am Zeilenende.
-    text = re.sub(r"(\w+)-\n(\w+)", r"\1\2", text)
+    # 1) Erzeugt vor erkannten Ueberschriften eine Absatzgrenze, damit Struktur erhalten bleibt.
+    text = re.sub(r"\n([A-ZÄÖÜ][a-zäöüA-ZÄÖÜ\s\-()]+)\n([A-ZÄÖÜ])", r"\n\n\1\n\2", text)
 
-    # 2) Ersetzt nur einzelne Zeilenumbrueche durch Leerzeichen und laesst Absaetze (\n\n) stehen.
+    # 2) Ersetzt einzelne Zeilenumbrueche durch Leerzeichen, laesst aber Absatzgrenzen (\n\n) unberuehrt.
     text = re.sub(r"(?<!\n)\n(?!\n)", " ", text)
 
-    # 3) Reduziert mehrfache Leerzeichen auf genau eines.
-    text = re.sub(r" +", " ", text)
+    # 3) Bereinigt mehrfache Leerzeichen auf genau ein Leerzeichen.
+    text = re.sub(r"  +", " ", text)
 
-    # 4) Absaetze bleiben erhalten, da Schritt 2 doppelte Zeilenumbrueche ausspart.
+    # 4) Doppelte Zeilenumbrueche bleiben erhalten, da nur einzelne \n ersetzt werden.
     return text.strip()
 
 
