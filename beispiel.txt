@@ -1,2 +1,129 @@
-Das ist ein Testdokument.
-Es hat mehrere Zeilen.
+Retrieval-Augmented Generation
+
+Definition
+Unter Retrieval-Augmented Generation (RAG) versteht man ein Softwaresystem, welches Information Retrieval mit einem Large Language Model kombiniert.
+
+Eine Abfrage, welche an das System gestellt wird, kann hierbei auf Informationen aus (externen) Informationsquellen, Datenbanken oder dem World Wide Web zugreifen statt nur auf die Trainingsdaten des Modells.
+
+Dies erhöht die Genauigkeit und Robustheit der generierten Inhalte, indem es die Modelle mit aktuellen und spezifischen Informationen versorgt.
+
+Typische Anwendungsfälle sind der Zugriff von Chatbots auf interne (Unternehmens-)Daten oder die Bereitstellung von Sachinformationen, die ausschließlich aus verlässlichen Quellen stammen sollen.
+
+Verfahren
+Retrieval-Augmented Generation besteht im Wesentlichen aus vier Stufen:
+
+1. Datenindexierung
+2. Datenabruf
+3. Augmentierung
+4. Antwortgenerierung
+
+Datenindexierung
+Die zu referenzierenden Daten werden im ersten Schritt in Worteinbettungen umgewandelt und in einer Vektordatenbank indexiert.
+
+Die Daten können hierbei sowohl unstrukturiert (Texte, Bilder, Video, Audio), semistrukturiert oder strukturiert (z. B. aus einer relationalen Datenbank oder einem Wissensgraphen) vorliegen.
+
+In der Vektordatenbank werden hierbei die Worteinbettungen mit den originalen Daten verknüpft.
+
+Abhängig von der jeweiligen Implementierung können auch Suchanfragen an das System und die zugehörigen Antworten durch ein RAG-System indexiert werden.
+
+Chunking (Aufteilen der Daten)
+Im ersten Schritt werden die zu indexierenden Daten in kleinere Bestandteile (Chunks) aufgeteilt.
+
+Textdokumente können beispielsweise in kleinere Absätze aufgeteilt werden, während man Wissensgraphen in Sub-Graphen zerteilt.
+
+Bilder können nach den Objekten im Bild (Hund, Tisch, Gesicht etc.) mittels eines Segmentierungsmodells aufgeteilt werden.
+
+Bei relationalen Datenbanken kann man das Datenbankschema (z. B. DDL) nach zusammengehörigen Tabellen aufteilen, welche fusioniert (z. B. "join") werden müssen.
+
+Die einzelnen Bestandteile werden anschließend mit Annotationen versehen, um sie der ursprünglichen Datenquelle zuordnen zu können.
+
+Vektor-Generierung
+Die einzelnen Chunks werden mittels Tokenisierung in Token zerlegt.
+
+Diese Token werden anschließend durch ein Einbettungsmodell in Worteinbettungen (Vektoren) übersetzt.
+
+Die Worteinbettungen werden dann in der Vektordatenbank gemeinsam mit den Chunks und Annotationen gespeichert.
+
+Bei Bildinformationen wird hier das Bild von einem Bild-zu-Text Modell in eine Beschreibung übersetzt und diese Beschreibung für die Worteinbettung verwendet.
+
+Seltener wird das Bild selbst codiert, denn hierfür wird ein geeigneter Tokenizer benötigt, welcher Bilddaten verarbeiten kann.
+
+Wenn Bild- und Textdaten in derselben Datenbank gespeichert werden sollen, wird ein multimodaler Tokenizer benötigt.
+
+Ähnliches gilt für das Verarbeiten von Audio- und Videodaten.
+
+Vernetzung von Daten
+Komplexe RAG-Systeme besitzen die Möglichkeit, die zu indexierenden Daten automatisiert miteinander zu verknüpfen.
+
+Hierbei wird mittels eines Sprachmodells aus den indizierten Dokumenten ein Wissensgraph extrahiert.
+
+Die innerhalb eines Dokuments beschriebenen Konzepte werden mit den jeweiligen Konzepten im Wissensgraphen verknüpft.
+
+Diese Verknüpfung ermöglicht eine formale Analyse der zuvor nur unstrukturiert vorliegenden Daten.
+
+Datenabruf
+Beim Datenabruf wird eine Suchanfrage des Benutzers zuerst in eine Worteinbettung umgewandelt.
+
+Anschließend wird ermittelt, welche in der Vektordatenbank gespeicherten Daten mit der Abfrage des Benutzers semantisch korrelieren.
+
+Werden hierbei relevante Daten gefunden, werden diese gewichtet (Ranking) und gefiltert.
+
+Für die Berechnung der Korrelation können unterschiedliche Verfahren zum Einsatz kommen.
+
+Typisch ist die Verwendung von Okapi BM25, SPLADE, Dragon, oder eine Kombination mehrerer Verfahren.
+
+Filterung
+Die Filterung der Daten kann aus unterschiedlichen Gründen erfolgen.
+
+Hierbei gilt es die Vertraulichkeit der Daten, Jugendschutz-Einschränkungen, Urheberrechte und ähnliches zu berücksichtigen.
+
+Rephrasing
+Einige Systeme können die Suchergebnisse mittels eines Sprachmodells auf Relevanzkriterien bewerten.
+
+Werden keine relevanten Daten gefunden, kann ein weiterer Agent die Anfrage des Benutzers umformulieren (rephrasing) und eine neue Suche starten.
+
+Das System wird darin beschränkt, wie viele Versuche es hat und/oder wie lange es hierfür Zeit hat.
+
+Da bei diesem Verfahren mehrere zusätzliche Schritte benötigt werden, ergibt sich ein erhöhter Arbeits- und Zeitaufwand für das System, um ein Ergebnis zu liefern.
+
+Der Vorteil besteht in der höheren Wahrscheinlichkeit ein günstiges Suchergebnis zu erhalten.
+
+Relationale Daten
+Bei relationalen Daten werden die Daten üblicherweise nicht vollständig in Dokumente umgewandelt und in der Vektordatenbank gespeichert, sondern nur das Datenschema.
+
+Bei der Suche wird das nötige Datenschema zurückgeliefert, aus dem ein Sprachmodell SQL-Quelltext erzeugt (Text-to-SQL).
+
+Dieser wird auf der Datenbank ausgeführt, um die benötigten Informationen zu generieren.
+
+Hierbei gilt zu beachten, dass der erzeugte Quelltext fehlerhaft oder schadhaft sein kann.
+
+Die Anfrage muss daher sowohl auf syntaktische Richtigkeit (Halluzination von nicht-existierenden Tabellen oder Spalten), als auch die Schädlichkeit (z. B. mögliche SQL-Injection) untersucht werden.
+
+Die Datenbankabfrage muss durch geeignete Rechtesetzung "Read-Only", also schreibgeschützt sein.
+
+Augmentierung
+Im Augmentierungsprozess (Datenkombinationsprozess) werden anwendungsspezifische Daten, etwa ein Systemprompt und die Metadaten des Benutzers, sowie die gefundenen Daten der Suchanfrage mit der Anfrage des Benutzers zusammengeführt.
+
+Komplexe RAG-Systeme können hierbei die Anfrage des Benutzers in unterschiedliche Wissensgebiete aufteilen und spezifisch behandeln.
+
+Antwortgenerierung
+Im letzten Schritt wird die augmentierte Suchanfrage in ein Sprachmodell übergeben, welches die Daten mittels eines statistischen Modells in eine Antwort transformiert.
+
+Zudem wird die vom Sprachmodell generierte Antwort mit Referenzen auf die Quellen der Daten verknüpft (typischerweise über einen URI), um dem Benutzer eine Nachvollziehbarkeit und Kontrollmöglichkeit der Antwort zu ermöglichen.
+
+Anwendungen
+Da RAG-Systeme eine Erweiterung zu klassischen Suchmaschinen sind, sind die Einsatzbereiche überschneidend.
+
+Anwendungen für RAG-Systeme finden in der Kundenbetreuung, der Analyse medizinischer Informationen, juristischen Recherchen, der Bildung, wissenschaftlichen Forschung, Finanzanalyse, der Auswertung von Logdaten, sowie allen anderen Anwendungen, bei denen das Auffinden von Informationen relevant ist.
+
+Herausforderungen
+RAG-Systeme weisen aufgrund einer Vielzahl an beteiligten Softwaresystemen und Akteuren eine hohe Komplexität in der Implementierung auf.
+
+Zudem muss die Indexierung, die Gewichtung und die Filterung der Daten kontinuierlich an sich ständig ändernde Gegebenheiten angepasst und erweitert werden.
+
+Der Betrieb eines RAG-Systems ist somit nicht nur mit einem hohen Aufwand in der Implementierung, sondern auch mit einem kontinuierlichen Aufwand im Betrieb verbunden.
+
+Softwarepakete
+Für die Implementierung von RAG-Systemen gibt es Softwarepakete, welche anwendungsspezifisch angepasst werden müssen.
+
+Hierbei unterscheidet man zwischen komplexen Software-Frameworks, welche eine umfangreiche Orchestrierung von KI-Agenten und Programmierschnittstellen ermöglichen, sowie Softwarepaketen, welche eine Low-Code Umgebung bereitstellen.
