@@ -1,5 +1,28 @@
-import argparse
 import os
+import warnings
+
+# Unterdrückt störende Transformers-Loader-Ausgaben (u. a. "BertModel LOAD REPORT ...").
+os.environ.setdefault("TRANSFORMERS_VERBOSITY", "error")
+
+# Unterdrückt die Pydantic-v1-Kompatibilitätswarnung unter Python 3.14 aus langchain_core.
+warnings.filterwarnings(
+    "ignore",
+    message=r".*Core Pydantic V1 functionality isn't compatible with Python 3\.14.*",
+)
+
+# Unterdrückt die HF-Hub-Hinweiswarnung zu nicht authentifizierten Requests.
+warnings.filterwarnings(
+    "ignore",
+    message=r".*You are sending unauthenticated requests to the HF Hub.*",
+)
+
+# Unterdrückt die "BertModel LOAD REPORT ... embeddings.position_ids | UNEXPECTED"-Meldung.
+warnings.filterwarnings(
+    "ignore",
+    message=r".*BertModel LOAD REPORT.*embeddings\.position_ids\s*\|\s*UNEXPECTED.*",
+)
+
+import argparse
 from pathlib import Path
 
 from dotenv import load_dotenv
