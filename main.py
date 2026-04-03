@@ -1,5 +1,6 @@
 import argparse
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
 
@@ -37,7 +38,8 @@ def get_input_text(args: argparse.Namespace) -> str:
 
 
 def main() -> None:
-    load_dotenv()
+    env_path = Path(__file__).with_name(".env")
+    load_dotenv(dotenv_path=env_path, override=True)
 
     parser = build_parser()
     args = parser.parse_args()
