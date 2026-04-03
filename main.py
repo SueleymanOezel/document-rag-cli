@@ -28,7 +28,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from google.api_core.exceptions import NotFound, ResourceExhausted
 
-from document_loader import load_text_from_file
+from document_loader import load_pdf, load_text
 from text_chunker import split_text_into_chunks
 from vector_store import VectorStore
 from qa_engine import setup_gemini, answer_question
@@ -44,7 +44,7 @@ def build_parser() -> argparse.ArgumentParser:
     input_group = parser.add_mutually_exclusive_group(required=True)
 
     input_group.add_argument("--text", type=str, help="Direkter Texteingang als String.")
-    input_group.add_argument("--file", type=str, help="Pfad zu einer UTF-8-Textdatei.")
+    input_group.add_argument("--file", type=str, help="Pfad zu einer .txt- oder .pdf-Datei.")
 
     parser.add_argument("--chunk-size", type=int, default=500, help="Maximale Größe eines Chunks in Zeichen.")
     parser.add_argument("--chunk-overlap", type=int, default=50, help="Überlappung zwischen zwei benachbarten Chunks in Zeichen.")
@@ -65,9 +65,12 @@ def get_input_text(args: argparse.Namespace) -> str:
         return args.text
     if args.file is not None:
         file_path = Path(args.file)
-        if not file_path.is_file():
-            raise FileNotFoundError(f"Datei nicht gefunden: {file_path}")
-        return load_text_from_file(args.file)
+        suffix = file_path.suffix.lower()
+        if suffix == ".txt":
+            return load_text(args.file)
+        if suffix == ".pdf":
+            return load_pdf(args.file)
+        raise ValueError("Nur .txt und .pdf Dateien werden unterstützt.")
     raise ValueError("Es wurde weder --text noch --file übergeben.")
 
 

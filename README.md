@@ -193,7 +193,7 @@ python main.py --file beispiel.txt --query "Nenne die wichtigsten Fakten" --top-
 - Free-Tier-Quota (Gemini API):
 	- Bei haeufigen Requests kann ein `429 ResourceExhausted` auftreten.
 	- In diesem Fall kurz warten und erneut versuchen, oder auf ein bezahltes Kontingent wechseln.
-- Aktuell werden nur UTF-8-Textdateien unterstuetzt.
+- Unterstuetzte Dateiformate: .txt (UTF-8) und .pdf
 
 ## 7. Naechste geplante Features
 
