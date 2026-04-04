@@ -48,7 +48,7 @@ git clone https://github.com/SueleymanOezel/document-rag-cli.git
 cd document-rag-cli
 ```
 
-### Schritt 2: Virtuelle Umgebung erstellen und Abhaengigkeiten installieren
+### Schritt 2: Virtuelle Umgebung erstellen und Abhängigkeiten installieren
 
 ```bash
 python -m venv .venv
@@ -76,7 +76,7 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-Kein API-Key noetig fuer den Retrieval-Modus.
+Kein API-Key nötig für den Retrieval-Modus.
 
 ## API-Key
 
@@ -85,7 +85,7 @@ Kein API-Key noetig fuer den Retrieval-Modus.
 - Ohne Key: Retrieval-Modus (zeigt relevante Textabschnitte)
 - Mit Key: volle KI-Antworten
 
-## Bekannte Einschraenkungen
+## Bekannte Einschränkungen
 
-- Im Gemini Free Tier sind bei hoher Last 503-Fehler moeglich (die App versucht automatisch 3x)
+- Im Gemini Free Tier sind bei hoher Last 503-Fehler möglich (die App versucht automatisch 3x)
 - Sehr kurze Chunks (<50 Zeichen) werden automatisch herausgefiltert
