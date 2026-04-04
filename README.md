@@ -18,13 +18,7 @@
 - 🔍 Retrieval-Modus ohne API-Key nutzbar
 - 🕐 Chatverlauf mit Uhrzeit
 - 🔄 Automatischer Retry bei API-Überlastung
-
-## Demo
-
-<!-- Screenshot hier einfügen -->
-> Tipp: Screenshot der App machen und als
-> assets/screenshot.png im Repo speichern,
-> dann ![Screenshot](assets/screenshot.png) eintragen.
+- 
 
 ## Architektur
 
