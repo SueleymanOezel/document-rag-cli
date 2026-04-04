@@ -7,17 +7,24 @@
 ![Live](https://img.shields.io/badge/Live-Streamlit%20Cloud-success)
 
 > Lade PDFs hoch und stelle Fragen dazu - mit oder ohne Gemini API-Key.  
-> Live: https://document-rag-cli-84ijrkhtxnkxvfu2kx4wv6.streamlit.app/
+> **[▶ Live Demo öffnen](https://document-rag-so.streamlit.app/)**
 
 ## Features
 
-- Mehrere PDFs gleichzeitig hochladen und durchsuchen
-- Relevanz-Score pro gefundenem Abschnitt (farbig)
-- Quellenangabe, welches Dokument den Treffer enthaelt
-- KI-Zusammenfassung mit eigenem Gemini API-Key (optional)
-- Retrieval-Modus ohne API-Key nutzbar
-- Chatverlauf mit Uhrzeit
-- Automatischer Retry bei API-Ueberlastung
+- 📄 Mehrere PDFs gleichzeitig hochladen und durchsuchen
+- 🎯 Relevanz-Score pro gefundenem Abschnitt (farbig)
+- 📁 Quellenangabe welches Dokument den Treffer enthält
+- 💬 KI-Zusammenfassung mit eigenem Gemini API-Key (optional)
+- 🔍 Retrieval-Modus ohne API-Key nutzbar
+- 🕐 Chatverlauf mit Uhrzeit
+- 🔄 Automatischer Retry bei API-Überlastung
+
+## Demo
+
+<!-- Screenshot hier einfügen -->
+> Tipp: Screenshot der App machen und als
+> assets/screenshot.png im Repo speichern,
+> dann ![Screenshot](assets/screenshot.png) eintragen.
 
 ## Architektur
 
@@ -69,7 +76,7 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-Kein API-Key ist noetig fuer den Retrieval-Modus.
+Kein API-Key noetig fuer den Retrieval-Modus.
 
 ## API-Key
 
