@@ -18,7 +18,6 @@
 - 🔍 Retrieval-Modus ohne API-Key nutzbar
 - 🕐 Chatverlauf mit Uhrzeit
 - 🔄 Automatischer Retry bei API-Überlastung
-- 
 
 ## Architektur
 
