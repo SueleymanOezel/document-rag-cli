@@ -9,6 +9,26 @@
 > Lade PDFs hoch und stelle Fragen dazu - mit oder ohne Gemini API-Key.  
 > **[▶ Live Demo öffnen](https://document-rag-so.streamlit.app/)**
 
+## Screenshots
+
+**Startzustand**
+
+![Startzustand](assets/Demo_start.png)
+
+**Retrieval-Modus** (ohne API-Key)
+
+| ![Retrieval 1](assets/Demo_Retrieval01.png) | ![Retrieval 2](assets/Demo_Retrieval02.png) |
+| --- | --- |
+
+**KI-Modus** (mit Gemini API-Key)
+
+| ![KI-Modus 1](assets/Demo_ki01.png) | ![KI-Modus 2](assets/Demo_ki02.png) |
+| --- | --- |
+
+**Chatverlauf**
+
+![Chatverlauf](assets/Demo_history.png)
+
 ## Features
 
 - 📄 Mehrere PDFs gleichzeitig hochladen und durchsuchen
