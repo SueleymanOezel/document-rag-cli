@@ -11,8 +11,74 @@ from qa_engine import QAEngine
 from text_chunker import split_text_into_chunks
 from vector_store import VectorStore
 
-st.set_page_config(page_title="Document RAG", page_icon="📄", layout="wide")
-st.title("📄 Document RAG")
+st.set_page_config(page_title="Document RAG", page_icon="📄", layout="centered")
+
+st.markdown(
+    """
+    <style>
+        .stApp {
+            background: #f7f7f5;
+        }
+        [data-testid="stSidebar"] {
+            background: #eeeeea;
+            border-right: 1px solid #d8d8d3;
+        }
+        [data-testid="stSidebar"] [data-testid="stSidebarContent"] {
+            background: #eeeeea;
+        }
+        .block-container {
+            max-width: 860px;
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+            background: #ffffff;
+            border: 1px solid #e6e6e2;
+            border-radius: 14px;
+            padding-left: 1.4rem;
+            padding-right: 1.4rem;
+        }
+        h1, h2, h3 {
+            letter-spacing: -0.01em;
+            color: #1f1f1d;
+        }
+        .stTextInput > div > div > input,
+        .stTextArea textarea {
+            background-color: #fcfcfb;
+            color: #1f1f1d;
+            border: 1px solid #bfc0b8;
+            border-radius: 10px;
+        }
+        .stTextInput > div > div > input:focus,
+        .stTextArea textarea:focus {
+            border-color: #8f9086;
+            box-shadow: 0 0 0 1px #8f9086;
+        }
+        .stButton button {
+            border-radius: 10px;
+            border: 1px solid #a9aa9f;
+            background: #f2f2ef;
+            color: #1f1f1d;
+            font-weight: 600;
+        }
+        .stButton button:hover {
+            background: #e7e7e2;
+            border-color: #8f9086;
+        }
+        .stButton button:focus {
+            box-shadow: 0 0 0 1px #8f9086;
+        }
+        [data-testid="stExpander"] {
+            border: 1px solid #e4e4e0;
+            border-radius: 12px;
+            background: #ffffff;
+        }
+        [data-testid="stVerticalBlockBorderWrapper"] {
+            background: #ffffff;
+            border-radius: 12px;
+        }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
 
 def init_session_state() -> None:
@@ -32,13 +98,14 @@ def init_session_state() -> None:
 
 
 def render_api_key_input() -> None:
-    st.subheader("Gemini API-Key")
-    st.text_input("API-Key (optional)", type="password", key="gemini_api_key")
-    st.caption("Deinen kostenlosen Key bekommst du auf aistudio.google.com")
-    st.info(
-        "ℹ️ Ohne API-Key werden nur die relevanten Textabschnitte angezeigt "
-        "(Retrieval-Modus). Mit Key erhältst du eine KI-Zusammenfassung."
-    )
+    has_key = bool(st.session_state.get("gemini_api_key", "").strip())
+    with st.expander("🔑 Gemini API-Key (optional)", expanded=not has_key):
+        st.text_input("API-Key", type="password", key="gemini_api_key")
+        st.caption("Deinen kostenlosen Key bekommst du auf aistudio.google.com")
+        st.info(
+            "Ohne API-Key werden nur die relevanten Textabschnitte angezeigt "
+            "(Retrieval-Modus). Mit Key erhältst du eine KI-Zusammenfassung."
+        )
 
 
 def add_chat_history_entry(question: str, answer: str) -> None:
@@ -55,7 +122,6 @@ def render_chat_history() -> None:
     if not st.session_state.chat_history:
         return
 
-    st.subheader("Chatverlauf")
     for index, entry in enumerate(st.session_state.chat_history):
         question = html.escape(entry["question"])
         answer = html.escape(entry["answer"]).replace("\n", "<br>")
@@ -138,6 +204,11 @@ def build_or_reuse_index(documents: list[tuple[str, str]], chunk_size: int, chun
 
 
 init_session_state()
+
+st.title("📄 Document RAG")
+st.caption("Lade PDFs hoch und stelle Fragen – mit oder ohne Gemini API-Key.")
+st.divider()
+
 render_api_key_input()
 
 with st.sidebar:
@@ -146,16 +217,10 @@ with st.sidebar:
     chunk_overlap = st.slider("Chunk Overlap", min_value=0, max_value=200, value=50, step=10)
     top_k = st.slider("Top-K", min_value=1, max_value=10, value=3, step=1)
 
-tab_upload, tab_text = st.tabs(["Datei-Upload", "Direkter Text"])
+st.subheader("📂 Dokumente")
+uploaded_files = st.file_uploader("PDFs hochladen", type="pdf", accept_multiple_files=True)
 
-with tab_upload:
-    uploaded_files = st.file_uploader("PDFs hochladen", type="pdf", accept_multiple_files=True)
-
-with tab_text:
-    direct_text = st.text_area("Oder Text direkt einfuegen", height=220)
-
-history_container = st.container()
-
+st.subheader("💬 Frage stellen")
 question = st.text_input("Deine Frage")
 ask_clicked = st.button("Fragen", type="primary")
 
@@ -172,11 +237,8 @@ if ask_clicked:
                 if source_text.strip():
                     documents.append((uploaded_file.name, source_text))
 
-        if direct_text.strip():
-            documents.append(("Direkter Text", direct_text))
-
         if not documents:
-            raise ValueError("Bitte lade mindestens eine PDF hoch oder gib direkten Text ein.")
+            raise ValueError("Bitte lade mindestens eine PDF hoch.")
 
         index_rebuilt = build_or_reuse_index(documents, chunk_size, chunk_overlap)
         if index_rebuilt:
@@ -186,7 +248,7 @@ if ask_clicked:
         with st.spinner("Suche relevante Abschnitte..."):
             retrieved_chunks = st.session_state.vector_store.search(question, top_k=top_k)
 
-        st.subheader("Gefundene Abschnitte")
+        st.subheader("🔍 Gefundene Abschnitte")
         for i, (chunk_tuple, score) in enumerate(retrieved_chunks, start=1):
             chunk, filename = chunk_tuple
             if score >= 80:
@@ -199,7 +261,7 @@ if ask_clicked:
                 score_color = "#dc2626"
                 score_suffix = " (möglicherweise nicht relevant)"
 
-            with st.expander(f"Details zu Abschnitt {i}", expanded=False):
+            with st.container(border=True):
                 st.markdown(
                     (
                         f"📄 Abschnitt {i} · {len(chunk)} Zeichen · "
@@ -209,10 +271,9 @@ if ask_clicked:
                     ),
                     unsafe_allow_html=True,
                 )
-                with st.container(border=True):
-                    # Codeblock in Markdown sorgt fuer eine gut lesbare, code-aehnliche Darstellung.
-                    safe_chunk = chunk.replace("```", "'''")
-                    st.markdown(f"```text\n{safe_chunk}\n```")
+                # Codeblock in Markdown sorgt fuer eine gut lesbare, code-aehnliche Darstellung.
+                safe_chunk = chunk.replace("```", "'''")
+                st.markdown(f"```text\n{safe_chunk}\n```")
 
         hat_key = bool(st.session_state.get("gemini_api_key", "").strip())
 
@@ -224,18 +285,19 @@ if ask_clicked:
                     context_chunks=[chunk for (chunk, _), _ in retrieved_chunks],
                 )
 
-            st.divider()
-            st.subheader("💬 Antwort")
-            st.markdown(response)
+            st.subheader("💡 Antwort")
+            st.info(response)
             answer = response
         else:
-            st.info("💡 Füge einen Gemini API-Key hinzu um eine KI-Zusammenfassung zu erhalten.")
             answer = "Retrieval-Modus: Relevante Abschnitte wurden angezeigt."
+            st.subheader("💡 Antwort")
+            st.info("Füge einen Gemini API-Key hinzu, um eine KI-Zusammenfassung zu erhalten.")
 
         add_chat_history_entry(question=question, answer=answer)
 
     except Exception as exc:
         st.error(f"Fehler: {exc}")
 
-with history_container:
-    render_chat_history()
+st.divider()
+st.subheader("🕐 Chatverlauf")
+render_chat_history()
